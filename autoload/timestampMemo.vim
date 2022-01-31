@@ -1,4 +1,4 @@
-let s:time = strftime("%Y%m%d_%T")
+let s:time = strftime("%Y%m%d")
 let s:sep = fnamemodify('.', ':p')[-1:]
 
 " nvimにはreaddir()は存在しないのでglob()を使用して代替する。
@@ -11,16 +11,33 @@ else
 endif
 
 
+function! timestampMemo#test() abort
+    let filename = substitute(s:time, ":", "", "g") . "_memo.txt"
+    let testpath = join([g:timestamp_save_path, filename], s:sep)
+
+    echo testpath
+endfunction
+
+
 function! timestampMemo#create_memo() abort
     " 日付を成形する。
     let filename = substitute(s:time, ":", "", "g") . "_memo.txt"
-    " redir()でメモファイルを生成
-    execute "redir > " . join([g:timestamp_save_path, filename], s:sep)
-    execute "redir END"
+    let testpath = join([g:timestamp_save_path, filename], s:sep)
 
-    " 生成したメモファイルを開く
-    execute "tabedit " . join([g:timestamp_save_path, filename], s:sep)
-    echo 'memo: created'
+    " ファイルが存在する場合は編集を実行する
+    if filewritable(expand(glob(join([g:timestamp_save_path, filename], s:sep))))
+        call timestampMemo#edit_memo(filename)
+        echo 'memo: edit'
+    else
+        " ファイルが存在しない場合は新規作成する
+        " redir()でメモファイルを生成
+         execute "redir > " . join([g:timestamp_save_path, filename], s:sep)
+        execute "redir END"
+
+        " 生成したメモファイルを開く
+        execute "tabedit " . join([g:timestamp_save_path, filename], s:sep)
+        echo 'memo: created'
+    endif
 endfunction
 
 " メモファイル編集処理
