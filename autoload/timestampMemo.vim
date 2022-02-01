@@ -10,15 +10,7 @@ else
     endfunction
 endif
 
-
-function! timestampMemo#test() abort
-    let filename = substitute(s:time, ":", "", "g") . "_memo.txt"
-    let testpath = join([g:timestamp_save_path, filename], s:sep)
-
-    echo testpath
-endfunction
-
-
+" メモファイル作成処理
 function! timestampMemo#create_memo() abort
     " 日付を成形する。
     let filename = substitute(s:time, ":", "", "g") . "_memo.txt"
@@ -75,6 +67,29 @@ endfunction
 " メモ一覧を表示するバッファ名
 let s:memo_list_buffer = 'TIMESTAMPMEMO_LIST'
 
+" メモファイル削除処理
+function! timestampMemo#delete(file)
+    let input = input(printf("Delete thi file? [Y]es/[N]o: "), '', )
+    if input ==? 'y'
+        " delete()を読んでファイルを削除する
+        call delete(expand(join([g:timestamp_save_path, a:file], s:sep)))
+        " ファイル一覧を再度取得してバッファに再描画する。
+        let memos = s:memofiles()
+        %delete _
+        call setline(1, memos)
+        echohl WarningMsg
+        echo printf("\rThis files is deleted. [%s]", join([g:timestamp_save_path, a:file], s:sep))
+        echohl None
+    endif
+    return ''
+endfunction
+
+function! timestampMemo#rename(filename)
+    let name = input('\rrename filename: ', '', )
+
+endfunction
+
+" メモ一覧を表示する処理
 function! timestampMemo#memolists() abort
     let memos = s:memofiles()
     if empty(memos)
@@ -101,7 +116,8 @@ function! timestampMemo#memolists() abort
 
         " 1. メモ一覧のバッファで`q`を押下するとバッファを破棄
         " 2. `Enter`でメモを開く
-        " の2つのキーマッピングを定義する
+        " 3. ファイル削除処理
+        " の3つのキーマッピングを定義する
         nnoremap <silent> <buffer>
                     \ <Plug>(memosession-close)
                     \ :<C-u>bwipeout!<CR> 
@@ -109,13 +125,18 @@ function! timestampMemo#memolists() abort
         nnoremap <silent> <buffer>
                     \ <Plug>(memo-open)
                     \ :<C-u>call timestampMemo#edit_memo(trim(getline('.')))<CR>
+
+        nnoremap <silent> <buffer>
+                    \ <Plug>(memo-delete)
+                    \ :<C-u>call timestampMemo#delete(trim(getline('.')))<CR>
         
         " <Plug>マップをキーにマッピングする
         nmap <buffer> q <Plug>(memosession-close)
         nmap <buffer> <CR> <Plug>(memo-open)
+        nmap <buffer> d <Plug>(memo-delete)
     endif
    
-    " メモファイルを表示する一時バッファのテキストをすb手削除して、取得したファイル一覧をバッファに挿入する。
+    " メモファイルを表示する一時バッファのテキストをすべて削除して、取得したファイル一覧をバッファに挿入する。
     %delete _
     call setline(1, memos)
 endfunction
