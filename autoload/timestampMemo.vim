@@ -69,7 +69,7 @@ let s:memo_list_buffer = 'TIMESTAMPMEMO_LIST'
 
 " メモファイル削除処理
 function! timestampMemo#delete(file)
-    let input = input(printf("Delete thi file? [Y]es/[N]o: "), '', )
+    let input = input(printf("Delete this file? [Y]es/[N]o: "), '', )
     if input ==? 'y'
         " delete()を読んでファイルを削除する
         call delete(expand(join([g:timestamp_save_path, a:file], s:sep)))
@@ -78,15 +78,21 @@ function! timestampMemo#delete(file)
         %delete _
         call setline(1, memos)
         echohl WarningMsg
-        echo printf("\rThis files is deleted. [%s]", join([g:timestamp_save_path, a:file], s:sep))
+        echo printf("\rThis file is deleted. [%s]", join([g:timestamp_save_path, a:file], s:sep))
         echohl None
     endif
     return ''
 endfunction
 
 function! timestampMemo#rename(filename)
-    let name = input('\rrename filename: ', '', )
-
+    let name = input(printf("Rename filename: "), '', )
+    call rename(expand(join([g:timestamp_save_path, a:filename], s:sep)), expand(join([g:timestamp_save_path, name], s:sep))) 
+    " ファイル一覧を再度取得してバッファに再描画する。
+    let memos = s:memofiles()
+    %delete _
+    call setline(1, memos)
+    echo printf("\rThis file is renamed. [%s] -> [%s]", a:filename, name)
+    return ''
 endfunction
 
 " メモ一覧を表示する処理
@@ -117,7 +123,8 @@ function! timestampMemo#memolists() abort
         " 1. メモ一覧のバッファで`q`を押下するとバッファを破棄
         " 2. `Enter`でメモを開く
         " 3. ファイル削除処理
-        " の3つのキーマッピングを定義する
+        " 4. ファイルリネーム処理
+        " の4つのキーマッピングを定義する
         nnoremap <silent> <buffer>
                     \ <Plug>(memosession-close)
                     \ :<C-u>bwipeout!<CR> 
@@ -129,11 +136,16 @@ function! timestampMemo#memolists() abort
         nnoremap <silent> <buffer>
                     \ <Plug>(memo-delete)
                     \ :<C-u>call timestampMemo#delete(trim(getline('.')))<CR>
+
+        nnoremap <silent> <buffer>
+                    \ <Plug>(memo-rename)
+                    \ :<C-u>call timestampMemo#rename(trim(getline('.')))<CR>
         
         " <Plug>マップをキーにマッピングする
         nmap <buffer> q <Plug>(memosession-close)
         nmap <buffer> <CR> <Plug>(memo-open)
         nmap <buffer> d <Plug>(memo-delete)
+        nmap <buffer> r <Plug>(memo-rename)
     endif
    
     " メモファイルを表示する一時バッファのテキストをすべて削除して、取得したファイル一覧をバッファに挿入する。
